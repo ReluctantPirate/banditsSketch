@@ -1,7 +1,7 @@
 enum blinkStates {BANDIT, BANDIT_RESULTS, CONDUIT, CONDUIT_RESULTS, DIAMOND, DIAMOND_RESULTS, RESET_ALL, RESET_RESOLVE};
 byte blinkState = BANDIT;
 
-Color teamColors[6] = {RED, ORANGE, YELLOW, GREEN, CYAN, MAGENTA};
+static const Color teamColors[6] = {RED, ORANGE, YELLOW, GREEN, CYAN, MAGENTA};
 byte teamColor = 1;
 bool isRevealed = false;
 byte currentBid = 1;
