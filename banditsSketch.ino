@@ -71,42 +71,27 @@ void loop() {
     case BANDIT_RESULTS:
       banditLoop();
       resetCheck();
+      banditDisplay();      
       break;
     case CONDUIT:
     case CONDUIT_RESULTS:
       conduitLoop();
       resetCheck();
+      conduitDisplay();      
       break;
     case DIAMOND:
     case DIAMOND_RESULTS:
       diamondLoop();
       resetCheck();
+      diamondDisplay();      
       break;
     case RESET_ALL:
     case RESET_RESOLVE:
       resetLoop();
+      resetDisplay();      
       break;
   }
 
-  //do display
-  switch (blinkState) {
-    case BANDIT:
-    case BANDIT_RESULTS:
-      banditDisplay();
-      break;
-    case CONDUIT:
-    case CONDUIT_RESULTS:
-      conduitDisplay();
-      break;
-    case DIAMOND:
-    case DIAMOND_RESULTS:
-      diamondDisplay();
-      break;
-    case RESET_ALL:
-    case RESET_RESOLVE:
-      resetDisplay();
-      break;
-  }
 
   //do communication
   switch (blinkState) {
