@@ -35,6 +35,29 @@ byte conduitRevealType = NOTHING;
 #define getBid(data)            (data & 7)
 #define getPrizeSignal(data)    (data & 7)
 
+// A smaller version of map that only works on bytes and only works if ranges are in order
+
+byte map_bytes(byte x, byte in_min, byte in_max, byte out_min, byte out_max) {
+
+  // map the input to the output range.
+  if ((in_max - in_min) > (out_max - out_min)) {
+
+      // round up if mapping bigger ranges to smaller ranges
+      // the only time we need full width to avoid overflow is after the multiply but before the divide,
+      // and the single (word) of the first operand should promote the entire expression - hopefully optimally.
+      return (byte) ( ((word) (x - in_min)) * (out_max - out_min + 1) / (in_max - in_min + 1) ) + out_min;
+
+  } else {
+
+      // round down if mapping smaller ranges to bigger ranges
+      // the only time we need full width to avoid overflow is after the multiply but before the divide,
+      // and the single (word) of the first operand should promote the entire expression - hopefully optimally.
+      return (byte) ( ((word) (x - in_min)) *  (out_max - out_min)  / (in_max - in_min) ) + out_min;
+
+  }
+  
+}  
+  
 
 void setup() {
   // put your setup code here, to run once:
@@ -393,7 +416,7 @@ void banditDisplay() {
     if (revealTimer.getRemaining() < FADE_DURATION) {//default display and fade
       //so we start with a default spin
       byte sinVal = sin8_C(map(millis() % (SWOOSH_PERIOD * 4), 0, SWOOSH_PERIOD * 4, 0, 255));
-      byte highlightMax = map(sinVal, 0, 255, 50, SWOOSH_HIGHLIGHT);
+      byte highlightMax = map_bytes(sinVal, 0, 255, 50, SWOOSH_HIGHLIGHT);
 
       byte fadeMax = map(revealTimer.getRemaining(), 0, FADE_DURATION, 0, 255);
 
