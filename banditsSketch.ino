@@ -81,22 +81,22 @@ void loop() {
   switch (blinkState) {
     case BANDIT:
     case BANDIT_RESULTS:
-      setValueSentOnAllFaces((blinkState << 3) + (currentBid));
+      setValueSentOnAllFaces( encodeBlinkState(blinkState) + (currentBid));
       break;
     case DIAMOND:
     case DIAMOND_RESULTS:
-      setValueSentOnAllFaces((blinkState << 3));
+      setValueSentOnAllFaces( encodeBlinkState(blinkState) );
       if (winningFace < 6) {
-        setValueSentOnFace((blinkState << 3) + (prizeSignal), winningFace);
+        setValueSentOnFace( encodeBlinkState(blinkState) + (prizeSignal), winningFace);
       }
       break;
     case RESET_ALL:
     case RESET_RESOLVE:
-      setValueSentOnAllFaces(blinkState << 3);
+      setValueSentOnAllFaces( encodeBlinkState(blinkState) );
       break;
     case CONDUIT:
     case CONDUIT_RESULTS:
-      setValueSentOnAllFaces(blinkState << 3);
+      setValueSentOnAllFaces( encodeBlinkState(blinkState) ); 
       if (diamondFace != NO_DIAMOND && banditFace != NO_BANDIT) {//only send special signals if we've actually got the goods
         setValueSentOnFace(banditSignal, diamondFace);
         setValueSentOnFace(diamondSignal, banditFace);
@@ -231,10 +231,10 @@ void conduitLoop() {
 
   //now grab the bandit info (if there is any)
   banditFace = NO_BANDIT;
-  banditSignal = (blinkState << 3);
+  banditSignal = encodeBlinkState(blinkState);
   if (findBandit((diamondFace + 3) % 6)) {
     banditFace = (diamondFace + 3) % 6;
-    banditSignal = (blinkState << 3) + (getLastValueReceivedOnFace(banditFace) & 7);
+    banditSignal = encodeBlinkState(blinkState) + (getLastValueReceivedOnFace(banditFace) & 7);
   }
 
   if (blinkState == CONDUIT) {
@@ -573,6 +573,10 @@ void resetDisplay() {
 
 byte getBlinkState (byte data) {
   return (data >> 3);
+}
+
+byte encodeBlinkState( byte data ) {
+  return (data << 3);  
 }
 
 byte getBid(byte data) {
