@@ -28,6 +28,14 @@ Timer revealTimer;
 enum conduitRevealTypes {NOTHING, WIN_LINE, WIN_PASS, WIN_BANDIT};
 byte conduitRevealType = NOTHING;
 
+// Functions for encodding and decoding data
+
+#define getBlinkState(data)     (data >> 3)
+#define encodeBlinkState(data)  (data << 3)
+#define getBid(data)            (data & 7)
+#define getPrizeSignal(data)    (data & 7)
+
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -573,20 +581,4 @@ void resetDisplay() {
 
   SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
   SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
-}
-
-byte getBlinkState (byte data) {
-  return (data >> 3);
-}
-
-byte encodeBlinkState( byte data ) {
-  return (data << 3);  
-}
-
-byte getBid(byte data) {
-  return (data & 7);
-}
-
-byte getPrizeSignal(byte data) {
-  return (data & 7);
 }
