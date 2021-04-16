@@ -28,11 +28,6 @@ Timer revealTimer;
 enum conduitRevealTypes {NOTHING, WIN_LINE, WIN_PASS, WIN_BANDIT};
 byte conduitRevealType = NOTHING;
 
-// We use `dim(WHITE,100)` freqnetly, so precompute it. 
-Color WHITE_DIMMED_100() {
-  return dim( WHITE , 100); 
-}
-
 void setup() {
   // put your setup code here, to run once:
 
@@ -421,6 +416,10 @@ void banditDisplay() {
 }
 
 
+// We use `dim(WHITE,100)` freqnetly, so precompute it. 
+void SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100() {
+  setColorOnFace(  dim( WHITE , 100) , random(5));
+}
 
 void diamondDisplay() {
   if (resultsTimer.isExpired()) {//normal display
@@ -443,7 +442,7 @@ void diamondDisplay() {
   } else if (resultsTimer.getRemaining() > (RESULTS_4)) {//stage 2 and 3
 
     setColor(makeColorHSB(DIAMOND_HUE, DIAMOND_SAT_MAX, 100));
-    setColorOnFace(WHITE_DIMMED_100(), random(5));
+    SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
     if (resultsMem < 6) {
       setColorOnFace(WHITE, resultsMem);
     }
@@ -493,11 +492,11 @@ void conduitDisplay() {
         displayPoints(pointsEarned, 100, true);
         break;
       case WIN_PASS:
-        //setColorOnFace(WHITE_DIMMED_100(), random(5));
+        //SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
         displayPoints(pointsEarned + resultsMem, 100, true);
         break;
       case WIN_BANDIT:
-        setColorOnFace(WHITE_DIMMED_100(), random(5));
+        SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
         displayPoints(currentBid, 255, false);
         break;
     }
@@ -529,7 +528,7 @@ void conduitDisplay() {
         break;
       case WIN_BANDIT:
         //fade down bid, fade up points
-        setColorOnFace(WHITE_DIMMED_100(), random(5));
+        SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
         displayPoints(currentBid, 255, false);
         break;
     }
@@ -572,8 +571,8 @@ void displayPoints(byte points, byte fade, bool oriented) {
 void resetDisplay() {
   banditDisplay();
 
-  setColorOnFace( WHITE_DIMMED_100() , random(5));
-  setColorOnFace( WHITE_DIMMED_100() , random(5));
+  SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
+  SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
 }
 
 byte getBlinkState (byte data) {
