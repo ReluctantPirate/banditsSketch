@@ -546,23 +546,22 @@ void conduitDisplay() {
 
 void displayPoints(byte points, byte fade, bool oriented) {
 
+  static const byte pointsToColorLookup[] = { 0 , 0 , 1 , 5 , 2 , 4  };    // 0th element is just a placeholder, it is not used
+
   byte orient = diamondFace;
+  
   if (oriented == false) {//it is reverse oriented (outside edge)
     orient += 3;
   }
-  switch (points) {
-    case 5:
-      setColorOnFace(dim(teamColors[teamColor], fade), (orient + 4) % 6);
-    case 4:
-      setColorOnFace(dim(teamColors[teamColor], fade), (orient + 2) % 6);
-    case 3:
-      setColorOnFace(dim(teamColors[teamColor], fade), (orient + 5) % 6);
-    case 2:
-      setColorOnFace(dim(teamColors[teamColor], fade), (orient + 1) % 6);
-    case 1:
-      setColorOnFace(dim(teamColors[teamColor], fade), orient % 6);
-      break;
+
+  orient += pointsToColorLookup[ points ];      // `case` compiles to a bunch of compares and jumps, so lookup is smaller espcially if it can also precompute. Hopefully I caputed the right logic here!
+
+  while (orient >=6 ) orient -=6;      // `Mod`ing by a non-power of two requires a divide and multipuly, so an iterative approach is smaller (and usually faster too!).
+
+  if (points>0 && points<6) {
+      setColorOnFace(dim(teamColors[teamColor], fade), orient);    
   }
+  
 }
 
 void resetDisplay() {
