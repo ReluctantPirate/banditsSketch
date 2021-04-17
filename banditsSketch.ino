@@ -1,7 +1,7 @@
 enum blinkStates {BANDIT, BANDIT_RESULTS, CONDUIT, CONDUIT_RESULTS, DIAMOND, DIAMOND_RESULTS, RESET_ALL, RESET_RESOLVE};
 byte blinkState = BANDIT;
 
-Color teamColors[6] = {RED, ORANGE, YELLOW, GREEN, CYAN, MAGENTA};
+static const Color teamColors[6] = {RED, ORANGE, YELLOW, GREEN, CYAN, MAGENTA};
 byte teamColor = 1;
 bool isRevealed = false;
 byte currentBid = 1;
@@ -28,6 +28,37 @@ Timer revealTimer;
 enum conduitRevealTypes {NOTHING, WIN_LINE, WIN_PASS, WIN_BANDIT};
 byte conduitRevealType = NOTHING;
 
+// Functions for encodding and decoding data
+
+#define getBlinkState(data)     (data >> 3)
+#define encodeBlinkState(data)  (data << 3)
+#define getBid(data)            (data & 7)
+#define getPrizeSignal(data)    (data & 7)
+
+// A smaller version of map that only works on bytes and only works if ranges are in order
+
+byte map_bytes(byte x, byte in_min, byte in_max, byte out_min, byte out_max) {
+
+  // map the input to the output range.
+  if ((in_max - in_min) > (out_max - out_min)) {
+
+      // round up if mapping bigger ranges to smaller ranges
+      // the only time we need full width to avoid overflow is after the multiply but before the divide,
+      // and the single (word) of the first operand should promote the entire expression - hopefully optimally.
+      return (byte) ( ((word) (x - in_min)) * (out_max - out_min + 1) / (in_max - in_min + 1) ) + out_min;
+
+  } else {
+
+      // round down if mapping smaller ranges to bigger ranges
+      // the only time we need full width to avoid overflow is after the multiply but before the divide,
+      // and the single (word) of the first operand should promote the entire expression - hopefully optimally.
+      return (byte) ( ((word) (x - in_min)) *  (out_max - out_min)  / (in_max - in_min) ) + out_min;
+
+  }
+  
+}  
+  
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -40,63 +71,48 @@ void loop() {
     case BANDIT_RESULTS:
       banditLoop();
       resetCheck();
+      banditDisplay();      
       break;
     case CONDUIT:
     case CONDUIT_RESULTS:
       conduitLoop();
       resetCheck();
+      conduitDisplay();      
       break;
     case DIAMOND:
     case DIAMOND_RESULTS:
       diamondLoop();
       resetCheck();
+      diamondDisplay();      
       break;
     case RESET_ALL:
     case RESET_RESOLVE:
       resetLoop();
+      resetDisplay();      
       break;
   }
 
-  //do display
-  switch (blinkState) {
-    case BANDIT:
-    case BANDIT_RESULTS:
-      banditDisplay();
-      break;
-    case CONDUIT:
-    case CONDUIT_RESULTS:
-      conduitDisplay();
-      break;
-    case DIAMOND:
-    case DIAMOND_RESULTS:
-      diamondDisplay();
-      break;
-    case RESET_ALL:
-    case RESET_RESOLVE:
-      resetDisplay();
-      break;
-  }
 
   //do communication
   switch (blinkState) {
     case BANDIT:
     case BANDIT_RESULTS:
-      setValueSentOnAllFaces((blinkState << 3) + (currentBid));
+      setValueSentOnAllFaces( encodeBlinkState(blinkState) + (currentBid));
       break;
     case DIAMOND:
     case DIAMOND_RESULTS:
-      setValueSentOnAllFaces((blinkState << 3));
+      setValueSentOnAllFaces( encodeBlinkState(blinkState) );
       if (winningFace < 6) {
-        setValueSentOnFace((blinkState << 3) + (prizeSignal), winningFace);
+        setValueSentOnFace( encodeBlinkState(blinkState) + (prizeSignal), winningFace);
       }
       break;
     case RESET_ALL:
     case RESET_RESOLVE:
-      setValueSentOnAllFaces(blinkState << 3);
+      setValueSentOnAllFaces( encodeBlinkState(blinkState) );
       break;
     case CONDUIT:
     case CONDUIT_RESULTS:
-      setValueSentOnAllFaces(blinkState << 3);
+      setValueSentOnAllFaces( encodeBlinkState(blinkState) ); 
       if (diamondFace != NO_DIAMOND && banditFace != NO_BANDIT) {//only send special signals if we've actually got the goods
         setValueSentOnFace(banditSignal, diamondFace);
         setValueSentOnFace(diamondSignal, banditFace);
@@ -231,10 +247,10 @@ void conduitLoop() {
 
   //now grab the bandit info (if there is any)
   banditFace = NO_BANDIT;
-  banditSignal = (blinkState << 3);
+  banditSignal = encodeBlinkState(blinkState);
   if (findBandit((diamondFace + 3) % 6)) {
     banditFace = (diamondFace + 3) % 6;
-    banditSignal = (blinkState << 3) + (getLastValueReceivedOnFace(banditFace) & 7);
+    banditSignal = encodeBlinkState(blinkState) + (getLastValueReceivedOnFace(banditFace) & 7);
   }
 
   if (blinkState == CONDUIT) {
@@ -385,7 +401,7 @@ void banditDisplay() {
     if (revealTimer.getRemaining() < FADE_DURATION) {//default display and fade
       //so we start with a default spin
       byte sinVal = sin8_C(map(millis() % (SWOOSH_PERIOD * 4), 0, SWOOSH_PERIOD * 4, 0, 255));
-      byte highlightMax = map(sinVal, 0, 255, 50, SWOOSH_HIGHLIGHT);
+      byte highlightMax = map_bytes(sinVal, 0, 255, 50, SWOOSH_HIGHLIGHT);
 
       byte fadeMax = map(revealTimer.getRemaining(), 0, FADE_DURATION, 0, 255);
 
@@ -416,6 +432,10 @@ void banditDisplay() {
 }
 
 
+// We use `dim(WHITE,100)` freqnetly, so precompute it. 
+void SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100() {
+  setColorOnFace(  dim( WHITE , 100) , random(5));
+}
 
 void diamondDisplay() {
   if (resultsTimer.isExpired()) {//normal display
@@ -438,7 +458,7 @@ void diamondDisplay() {
   } else if (resultsTimer.getRemaining() > (RESULTS_4)) {//stage 2 and 3
 
     setColor(makeColorHSB(DIAMOND_HUE, DIAMOND_SAT_MAX, 100));
-    setColorOnFace(dim(WHITE, 100), random(5));
+    SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
     if (resultsMem < 6) {
       setColorOnFace(WHITE, resultsMem);
     }
@@ -488,11 +508,11 @@ void conduitDisplay() {
         displayPoints(pointsEarned, 100, true);
         break;
       case WIN_PASS:
-        //setColorOnFace(dim(WHITE, 100), random(5));
+        //SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
         displayPoints(pointsEarned + resultsMem, 100, true);
         break;
       case WIN_BANDIT:
-        setColorOnFace(dim(WHITE, 100), random(5));
+        SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
         displayPoints(currentBid, 255, false);
         break;
     }
@@ -524,7 +544,7 @@ void conduitDisplay() {
         break;
       case WIN_BANDIT:
         //fade down bid, fade up points
-        setColorOnFace(dim(WHITE, 100), random(5));
+        SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
         displayPoints(currentBid, 255, false);
         break;
     }
@@ -546,39 +566,27 @@ void conduitDisplay() {
 
 void displayPoints(byte points, byte fade, bool oriented) {
 
+  static const byte pointsToColorLookup[] = { 0 , 0 , 1 , 5 , 2 , 4  };    // 0th element is just a placeholder, it is not used
+
   byte orient = diamondFace;
+  
   if (oriented == false) {//it is reverse oriented (outside edge)
     orient += 3;
   }
-  switch (points) {
-    case 5:
-      setColorOnFace(dim(teamColors[teamColor], fade), (orient + 4) % 6);
-    case 4:
-      setColorOnFace(dim(teamColors[teamColor], fade), (orient + 2) % 6);
-    case 3:
-      setColorOnFace(dim(teamColors[teamColor], fade), (orient + 5) % 6);
-    case 2:
-      setColorOnFace(dim(teamColors[teamColor], fade), (orient + 1) % 6);
-    case 1:
-      setColorOnFace(dim(teamColors[teamColor], fade), orient % 6);
-      break;
+
+  orient += pointsToColorLookup[ points ];      // `case` compiles to a bunch of compares and jumps, so lookup is smaller espcially if it can also precompute. Hopefully I caputed the right logic here!
+
+  while (orient >=6 ) orient -=6;      // `Mod`ing by a non-power of two requires a divide and multipuly, so an iterative approach is smaller (and usually faster too!).
+
+  if (points>0 && points<6) {
+      setColorOnFace(dim(teamColors[teamColor], fade), orient);    
   }
+  
 }
 
 void resetDisplay() {
   banditDisplay();
-  setColorOnFace(dim(WHITE, 100), random(5));
-  setColorOnFace(dim(WHITE, 100), random(5));
-}
 
-byte getBlinkState (byte data) {
-  return (data >> 3);
-}
-
-byte getBid(byte data) {
-  return (data & 7);
-}
-
-byte getPrizeSignal(byte data) {
-  return (data & 7);
+  SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
+  SETCOLOR_RANDOM_FACE_TO_WHITE_DIMMED_100();
 }
